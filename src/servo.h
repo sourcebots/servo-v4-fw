@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define NUM_SERVOS 12
+#define NUM_SERVOS 8
 #define NUM_SERVO_PHASES 3
 #define ROUND_UP_DIV(x, y) (uint8_t)(((x) + (y) - 1) / (y))
 #define SERVOS_PER_PHASE ROUND_UP_DIV(NUM_SERVOS, NUM_SERVO_PHASES)
