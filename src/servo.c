@@ -12,7 +12,8 @@
 
 #define US_TO_TICK(x) ((uint16_t)x / 5)
 #define TICK_TO_US(x) (x * 5)
-#define TICKS_BETWEEN_EDGES US_TO_TICK(125)
+#define TICKS_BETWEEN_EDGES US_TO_TICK(US_BETWEEN_EDGES)
+#define NUM_SERVOS_EXTRA (NUM_SERVO_PHASES * SERVOS_PER_PHASE)
 static void calculate_phase_steps(uint8_t phase);
 
 static const uint8_t servo_bit_mapping[] = {15, 14, 13, 12, 11, 10, 9, 8, 0, 1, 2, 3};
@@ -26,7 +27,7 @@ typedef struct {
     uint16_t pulse;  // in timer ticks
 } servo_t;
 
-static servo_t servo_state[NUM_SERVOS] = {};
+static servo_t servo_state[NUM_SERVOS_EXTRA] = {};
 static servo_step_t servo_steps[NUM_SERVO_PHASES][SERVO_STEPS_PER_PHASE] = { 0 };
 
 // loaded from servo_steps at the start of each phase
@@ -56,7 +57,7 @@ static void init_timer(void) {
 
 void servo_init(void) {
     // initialise servo state indexes
-    for (uint8_t i = 0; i < NUM_SERVOS; i++) {
+    for (uint8_t i = 0; i < NUM_SERVOS_EXTRA; i++) {
         servo_state[i].idx = i;
         servo_state[i].enabled = false;
         servo_state[i].pulse = US_TO_TICK(MIN_SERVO_PULSE);
@@ -222,9 +223,15 @@ static void set_expander_output(uint16_t val) {
 
     // setup transaction to GPIO register
     i2c_start_message(I2C_EXPANDER_ADDR);
+#if NUM_SERVOS > 8
     i2c_send_byte(EXT_GPIOA);
     i2c_send_byte((uint8_t)(val & 0xff));  // A-reg first
     i2c_send_byte((uint8_t)((val >> 8) & 0xff));
+#else
+    // The first 8 servos are all in the upper byte
+    i2c_send_byte(EXT_GPIOA + 1);
+    i2c_send_byte((uint8_t)((val >> 8) & 0xff));  // B-reg only
+#endif
     i2c_stop_message();
 }
 
@@ -283,7 +290,7 @@ void tim1_cc_isr(void) {
         }
     }
 
-     if (current_servo_step == (SERVO_STEPS_PER_PHASE - 1)) {
+    if (current_servo_step == (SERVO_STEPS_PER_PHASE - 1)) {
         // this phase is complete, stop interrupts until the next phase
         timer_disable_irq(TIM1, TIM_DIER_CC1IE);
     }
