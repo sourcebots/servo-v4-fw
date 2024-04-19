@@ -185,7 +185,7 @@ static void calculate_phase_steps(uint8_t phase) {
         sorted_servo_steps[step].rising = true;
         if (step == (SERVOS_PER_PHASE - 1)) {
             // this gap is the remaining delay before the first falling edge
-            sorted_servo_steps[step].next_steps = sorted_servo_states[0].pulse - (TICKS_BETWEEN_EDGES * 3);
+            sorted_servo_steps[step].next_steps = sorted_servo_states[0].pulse - (TICKS_BETWEEN_EDGES * (SERVOS_PER_PHASE - 1));
         } else {
             sorted_servo_steps[step].next_steps = TICKS_BETWEEN_EDGES;
         }
